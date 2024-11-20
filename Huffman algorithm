@@ -1,0 +1,123 @@
+#include <iostream>
+#include <queue>
+#include <unordered_map>
+#include <vector>
+#include <iomanip>
+
+using namespace std;
+
+// Структура узла дерева Хаффмана
+struct Node {
+    char ch;      // Символ
+    int freq;     // Частота
+    Node *left;   // Левый потомок
+    Node *right;  // Правый потомок
+
+    Node(char c, int f) : ch(c), freq(f), left(nullptr), right(nullptr) {}
+};
+
+// Класс-компаратор для приоритетной очереди (минимальная куча)
+struct Compare {
+    bool operator()(Node* left, Node* right) {
+        return left->freq > right->freq;  // Узлы с меньшей частотой имеют приоритет
+    }
+};
+
+// Функция для построения дерева Хаффмана
+Node* buildHuffmanTree(const unordered_map<char, int>& freq) {
+    priority_queue<Node*, vector<Node*>, Compare> pq;
+
+    // Создаем листовой узел для каждого символа и добавляем в очередь
+    for (auto pair : freq) {
+        pq.push(new Node(pair.first, pair.second));
+    }
+
+    // Объединяем узлы для построения дерева
+    while (pq.size() > 1) {
+        Node* left = pq.top(); pq.pop();  // Узел с наименьшей частотой
+        Node* right = pq.top(); pq.pop(); // Второй узел с наименьшей частотой
+
+        // Создаем новый внутренний узел
+        Node* node = new Node('\0', left->freq + right->freq);  // Символ '\0' обозначает внутренний узел
+        node->left = left;
+        node->right = right;
+
+        pq.push(node);  // Добавляем новый узел обратно в очередь
+    }
+
+    // Возвращаем корень дерева
+    return pq.top();
+}
+
+// Рекурсивная функция для получения кодов Хаффмана
+void encode(Node* root, const string& str, unordered_map<char, string>& huffmanCode) {
+    if (!root) return;
+
+    // Если узел листовой, добавляем код в map
+    if (!root->left && !root->right) {
+        huffmanCode[root->ch] = str;
+    }
+
+    encode(root->left, str + "0", huffmanCode);
+    encode(root->right, str + "1", huffmanCode);
+}
+
+// Функция для отображения дерева Хаффмана
+void drawHuffmanTree(Node* root, int depth = 0) {
+    if (!root) return;  // Если узел пустой, ничего не делаем
+
+    // Сначала отображаем правое поддерево (имитируем отображение на бумаге)
+    drawHuffmanTree(root->right, depth + 1);
+
+    // Отображаем текущий узел
+    cout << setw(4 * depth) << "";  // Отступ в зависимости от глубины
+    if (root->ch == '\0') {
+        cout << "[*:" << root->freq << "]\n";  // Внутренний узел
+    } else {
+        cout << "[" << root->ch << ":" << root->freq << "]\n";  // Листовой узел
+    }
+
+    // Затем отображаем левое поддерево
+    drawHuffmanTree(root->left, depth + 1);
+}
+
+int main() {
+    // Ввод строки от пользователя
+    cout << "Введите текст: ";
+    string text;
+    getline(cin, text);  // Считываем строку от пользователя
+
+    // Подсчитываем частоту каждого символа
+    unordered_map<char, int> freq;
+    for (char ch : text) {
+        freq[ch]++;
+    }
+
+    // Строим дерево Хаффмана
+    Node* root = buildHuffmanTree(freq);
+
+    // Генерируем коды Хаффмана
+    unordered_map<char, string> huffmanCode;
+    encode(root, "", huffmanCode);
+
+    // Отображаем дерево Хаффмана
+    cout << "Структура дерева Хаффмана:\n";
+    drawHuffmanTree(root);
+
+    // Отображаем сгенерированные коды Хаффмана
+    cout << "\nКоды Хаффмана:\n";
+    for (auto pair : huffmanCode) {
+        cout << pair.first << ": " << pair.second << "\n";
+    }
+
+    // Кодируем входной текст
+    string encodedString = "";
+    for (char ch : text) {
+        encodedString += huffmanCode[ch];
+    }
+
+    // Выводим закодированную строку
+    cout << "\nЗакодированная строка:\n" << encodedString << "\n";
+
+    return 0;
+}
